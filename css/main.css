@@ -1,0 +1,241 @@
+html {
+    overflow: hidden;
+}
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+*:focus {
+    outline: none;
+}
+
+*:not(input) {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently supported by Chrome, Opera and Firefox */
+}
+
+#container {
+    display: table-cell;
+}
+
+#uiWrapper {
+    display: table-cell;
+    height: 100vh;
+    width: 400px;
+    vertical-align: top;
+    overflow: hidden;
+}
+
+#sidePanel {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    height: 100%;
+}
+
+.sideUi {
+    height: 100%;
+    width: 100%;
+    overflow: visible;
+    padding: 10px 5px;
+    width: 100%;
+}
+
+button .icon span {
+    font-size: 0.85em;
+}
+
+a.dropdown-item:hover {
+    color: #1dd2af;
+}
+
+.panel.datanav {
+    background-color: #444;
+    border-radius: 0;
+    width: 47px;
+}
+
+.panel-block {
+    border: 0 !important;
+    line-height: 45px;
+    position: absolute !important;
+    height: 45px;
+}
+
+.panel-block .icon {
+    width: 1rem;
+}
+
+.panel-block:last-child {
+    border-radius: 0;
+}
+
+.panel-block.is-active {
+    background-color: #d16318;
+}
+.panel-block.is-active:hover {
+    background-color: #c15308;
+}
+
+.button.is-orange {
+    background-color: #d16318;
+    border-color: #c15308;
+}
+.button.is-orange:hover {
+    background-color: #c15308;
+}
+.is-disabled {
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+.floatingPanel {
+    position: absolute;
+    right: 410px;
+    top: 10px;
+}
+
+.shortcut {
+    font-size: 80%;
+    color: #aaa;
+    margin-left: 5px;
+}
+
+button.is-orange .shortcut {
+    color: #eee;
+}
+
+.shortcut:before {
+    content: "[";
+}
+
+.shortcut:after {
+    content: "]";
+}
+
+.inlineDialog {
+    max-height: 0;
+    transition: max-height 0.2s linear;
+    overflow: hidden;
+}
+.inlineDialog.opened {
+    max-height: 200px;
+}
+
+.tableContainer table {
+    position: relative;
+    line-height: 0.6em;
+}
+
+.tableContainer .table th {
+    position: sticky;
+    top: 0;
+    background-color: #343c3d;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+}
+
+.notification {
+    position: fixed;
+    top: 10px;
+    left: calc(50% - 200px);
+    transform: translate(-50%);
+    padding: 1.25rem 1.25rem 1.25rem 1.5rem;
+}
+
+.content {
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 0.5rem !important;
+}
+
+.content.noBottom {
+    margin-bottom: 0 !important;
+}
+
+.content h4 {
+    margin-bottom: 0.1rem !important;
+}
+
+.table tr.is-selected td,
+.table tr.is-selected th {
+    border-color: #5e6d6f;
+}
+
+.shortcutColumn {
+    color: #888;
+    padding: 0.5em 0;
+    width: 2em;
+}
+
+#supportContainer table {
+    font-size: 0.8em;
+}
+
+#supportContainer table td:first-of-type {
+    width: 5%;
+}
+
+.ss-content {
+    overflow-x: hidden !important;
+    background-color: #1b1b1c;
+}
+
+.ss-content td:last-of-type {
+    padding-right: 1.2em;
+}
+
+a.tag {
+    text-decoration: none !important;
+}
+a.tag:hover {
+    box-shadow: 0 0 2px 0px #fffd;
+}
+
+.input,
+.select select,
+.textarea {
+    background-color: #fff;
+    border-color: #5e6d6f;
+    border-radius: 0.4em;
+    color: #282f2f;
+}
+
+.input::placeholder,
+.select select::placeholder,
+.textarea::placeholder {
+    color: #555 !important;
+}
+
+#presetContextMenu {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    width: 200px;
+    z-index: 2000;
+}
+
+.iconText {
+    background-color: #777;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 50%;
+    padding: 0;
+    padding-top: 1px;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1em;
+    font-size: 0.8em;
+}
+
+.iconText:hover {
+    color: #ccc;
+    background-color: #666;
+}
