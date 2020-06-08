@@ -239,3 +239,16 @@ a.tag:hover {
     color: #ccc;
     background-color: #666;
 }
+
+.tile.is-parent {
+    padding: 0;
+}
+
+.sideBottom {
+    position:absolute;
+    bottom: 5px;
+    left: 5px;
+}
+.sideBottom p {
+    font-size: 80%;
+}

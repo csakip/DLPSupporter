@@ -4,7 +4,7 @@ import DSSupport from './DSSupport.js';
 export default class DSSupportTip {
   constructor(parent, contactPosition, baseY, tipDiameter = 0.3, selected = false) {
     this.parent = parent;
-    this.contactPosition = contactPosition;
+    this.contactPosition = contactPosition.clone();
     this.baseY = baseY;
     this.selected = false;
     this.tip = {};
@@ -24,7 +24,7 @@ export default class DSSupportTip {
 
     this.tip.mesh = new THREE.Mesh(tipGeometry, DSSupport.material);
     DSSupport.raycastGroup.add(this.tip.mesh);
-    this.supportHeightHandle = new THREE.Mesh(new THREE.SphereGeometry(this.parent.shaft.diameter, 8, 6), new THREE.MeshBasicMaterial({
+    this.supportHeightHandle = new THREE.Mesh(new THREE.SphereGeometry(this.parent.shaft.diameter * 0.75, 8, 6), new THREE.MeshBasicMaterial({
       color: 0xccff55,
       opacity: 0.5,
       transparent: true
@@ -65,6 +65,14 @@ export default class DSSupportTip {
   moveTipTo(point) {
     this.contactPosition.copy(point);
     this.setPositions();
+    this.parent.checkLowestPointingUp();
+    this.parent.setPositions();
+  }
+
+  moveToNewPosition(contactPosition, basePosition) {
+    this.contactPosition.copy(contactPosition);
+    this.baseY = this.parent.jointPosition.y;
+    this.setPositions();
   }
 
   moveBaseHeight(offset) {
@@ -97,6 +105,12 @@ export default class DSSupportTip {
     this.tipEnd.mesh.material = DSSupport.material;
     this.supportHeightHandle.visible = false;
     this.selected = false;
+  }
+
+  adjustDiameter(value) {
+    this.tip.diameter *= value;
+    this.tip.mesh.geometry.scale(value, 1, value);
+    this.tipEnd.mesh.geometry.scale(value, value, value); // this.supportHeightHandle.geometry.scale(value, value, value);
   }
 
   dispose() {

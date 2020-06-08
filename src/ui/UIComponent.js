@@ -7,12 +7,15 @@ export default function UIComponent() {
   const a3d = window.data.my3dApp;
   const [activePanel, setActivePanel] = React.useState('open');
   const [hasMesh, setHasMesh] = React.useState(true);
+  const [helpText, setHelpText] = React.useState([]);
 
   React.useEffect(() => {
     window.addEventListener('meshLoaded', (e) => handleMeshLoaded(e));
     setHotkeys();
     activatePanel('support');
   }, [])
+
+  React.useEffect(() => { showHelpText() }, [activePanel]);
 
   function setHotkeys() {
     hotkeys('F1,F2,F3,F4,shift+/', function (event, handler) {
@@ -39,6 +42,45 @@ export default function UIComponent() {
     setActivePanel(panelName);
     window.dispatchEvent(new CustomEvent('u2sActivePanel', { detail: { activePanel: panelName } }));
   }
+
+  function showHelpText(switches) {
+    let ht = [];
+    helpTexts.filter(h => h.panelName == activePanel).forEach(pi => {
+      const newLines = Array.isArray(pi.text) ? pi.text : [pi.text];
+      ht = ht.concat(newLines);
+      pi.switches.filter(si => switches && switches.contains(si.switch)).forEach(si => ht.concat(Array.isArray(si.text) ? si.text : [si.text]));
+    });
+    setHelpText(ht);
+  }
+
+  const helpTexts = [
+    {
+      "panelName": "open",
+      "text": "This is a common help for open",
+      "switches": [
+        {
+          "switch": "file",
+          "text": "Switch help"
+        }
+      ]
+    },
+    {
+      "panelName": "support",
+      "text": [
+        "This is a common help for support",
+        "[Ctrl + A] to select all supports",
+        "[I] to invert selection"
+      ],
+      "switches": [
+        {
+          "switch": "supportSelected",
+          "text": [
+            "[del] to delete selected supports"
+          ]
+        }
+      ]
+    }
+  ];
 
   let i = 0;
   return (
@@ -70,12 +112,17 @@ export default function UIComponent() {
             </a>
           </nav>
         </div>
-        <div className="tile" style={{ width: 335, flex: 'none' }}>
-          <div className='sideUi'>
-            {activePanel === 'open' && <PanelOpen hasMesh={hasMesh} />}
-            {activePanel === 'support' && <PanelSupports hasMesh={hasMesh} />}
-            {activePanel === 'analyze' && <PanelTest />}
-            {activePanel === 'info' && <PanelInfo />}
+        <div className="tile is-parent is-vertical" style={{ width: 335, position: 'relative' }}>
+          <div className='tile'>
+            <div className='sideUi'>
+              {activePanel === 'open' && <PanelOpen hasMesh={hasMesh} />}
+              {activePanel === 'support' && <PanelSupports hasMesh={hasMesh} />}
+              {activePanel === 'analyze' && <PanelTest />}
+              {activePanel === 'info' && <PanelInfo />}
+            </div>
+          </div>
+          <div className='sideBottom'>
+            {helpText.map((ht, idx) => <p key={idx}>{ht}</p>)}
           </div>
         </div>
       </div>

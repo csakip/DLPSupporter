@@ -5,21 +5,22 @@ export default function PanelOpen(props) {
   const [fileModalOpen, setFileModalOpen] = React.useState(false);
   const [minHeight, setMinHeight] = React.useState(a3d.minHeight);
 
-  React.useEffect(() => {
-    window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
-    return () => { window.data.removeCallbacks('panelOpen'); }
-  }, []);
+  // React.useEffect(() => {
+  //   window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
+  //   return () => { window.data.removeCallbacks('panelOpen'); }
+  // }, []);
 
-  function clickTest() {
-    window.data.setMinHeight(minHeight + 1);
+  function changeMinHeight(value) {
+    a3d.setMinHeight(value);
+    setMinHeight(value);
   }
 
-  function setMinheightCallback(newMinHeight) {
-    setMinHeight(newMinHeight);
-  }
+  // function setMinheightCallback(newMinHeight) {
+  //   setMinHeight(newMinHeight);
+  // }
 
   function changeMode(newMode) {
-    if(newMode === mode) newMode = null;
+    if (newMode === mode) newMode = null;
     setMode(newMode);
     window.dispatchEvent(new CustomEvent('u2sTransformControlModeSelect', { detail: { mode: newMode } }));
     document.activeElement.blur();
@@ -39,9 +40,7 @@ export default function PanelOpen(props) {
 
   return (
     <>
-      <h3 className="title">{minHeight}</h3>
-
-      <button onClick={() => clickTest()}>Tick</button>
+      <label>Minimum height</label><input type='number' value={minHeight} step="0.5" onChange={(e) => changeMinHeight(e.target.value)} min="0" max="20" />
 
       <div className="content">
         <h3>File</h3>

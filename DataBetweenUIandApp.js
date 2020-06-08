@@ -24,11 +24,6 @@ class DataBetweenUIandApp {
     go(action, data) {
         this.callbacks.filter(c => c.action === action).forEach(c => { c.callback(data); });
     }
-
-    setMinHeight(d) {
-        this.my3dApp.minHeight = d;
-        this.go('setMinHeight', d);
-    }
 }
 
 window.data = new DataBetweenUIandApp();

@@ -720,7 +720,7 @@ THREE.TransformControlsGizmo = function () {
 		fog: false
 	});
 
-	var gizmoLineMaterial = new THREE.LineMaterial({
+	var gizmoLine2Material = new THREE.LineMaterial({
 		depthTest: false,
 		depthWrite: false,
 		transparent: true,
@@ -728,57 +728,71 @@ THREE.TransformControlsGizmo = function () {
 		fog: false
 	});
 
-	gizmoLineMaterial.resolution.set(window.innerWidth - 400, window.innerHeight);
+	gizmoLine2Material.resolution.set(window.innerWidth - 400, window.innerHeight);
+
+	var gizmoLineMaterial = new THREE.LineBasicMaterial( {
+		depthTest: false,
+		depthWrite: false,
+		transparent: true,
+		linewidth: 1,
+		fog: false
+	} );
 
 	// Make unique material for each axis/color
 
 	var matInvisible = gizmoMaterial.clone();
-	matInvisible.opacity = 0.15;
+	matInvisible.opacity = 0.25;
 
 	var matHelper = gizmoMaterial.clone();
 	matHelper.opacity = 0.33;
 
 	var matRed = gizmoMaterial.clone();
-	matRed.color.set(0xff0000);
+	matRed.color.set(0xbf2935);
 
 	var matGreen = gizmoMaterial.clone();
-	matGreen.color.set(0x00ff00);
+	matGreen.color.set(0x49ba61);
 
 	var matBlue = gizmoMaterial.clone();
-	matBlue.color.set(0x0000ff);
+	matBlue.color.set(0x007ec7);
 
 	var matWhiteTransparent = gizmoMaterial.clone();
-	matWhiteTransparent.opacity = 0.25;
+	matWhiteTransparent.opacity = 0.3;
 
 	var matYellowTransparent = matWhiteTransparent.clone();
-	matYellowTransparent.color.set(0xffff00);
+	matYellowTransparent.color.set(0xdddd00);
 
 	var matCyanTransparent = matWhiteTransparent.clone();
-	matCyanTransparent.color.set(0x00ffff);
+	matCyanTransparent.color.set(0x00ddcc);
 
 	var matMagentaTransparent = matWhiteTransparent.clone();
-	matMagentaTransparent.color.set(0xff00ff);
+	matMagentaTransparent.color.set(0xcc55cc);
 
 	var matYellow = gizmoMaterial.clone();
-	matYellow.color.set(0xffff00);
+	matYellow.color.set(0xdddd00);
 
 	var matLineRed = gizmoLineMaterial.clone();
-	matLineRed.color.set(0xff0000);
+	matLineRed.color.set(0xbf2935);
+	var matLine2Red = gizmoLine2Material.clone();
+	matLine2Red.color.set(0xbf2935);
 
 	var matLineGreen = gizmoLineMaterial.clone();
-	matLineGreen.color.set(0x00ff00);
+	matLineGreen.color.set(0x49ba61);
+	var matLine2Green = gizmoLine2Material.clone();
+	matLine2Green.color.set(0x49ba61);
 
 	var matLineBlue = gizmoLineMaterial.clone();
-	matLineBlue.color.set(0x0000ff);
+	matLineBlue.color.set(0x007ec7);
+	var matLine2Blue = gizmoLine2Material.clone();
+	matLine2Blue.color.set(0x007ec7);
 
 	var matLineCyan = gizmoLineMaterial.clone();
-	matLineCyan.color.set(0x00ffff);
+	matLineCyan.color.set(0x00ddcc);
 
 	var matLineMagenta = gizmoLineMaterial.clone();
-	matLineMagenta.color.set(0xff00ff);
+	matLineMagenta.color.set(0xcc55cc);
 
 	var matLineYellow = gizmoLineMaterial.clone();
-	matLineYellow.color.set(0xffff00);
+	matLineYellow.color.set(0xdddd00);
 
 	var matLineGray = gizmoLineMaterial.clone();
 	matLineGray.color.set(0x787878);
@@ -792,24 +806,24 @@ THREE.TransformControlsGizmo = function () {
 
 	var scaleHandleGeometry = new THREE.BoxBufferGeometry(0.125, 0.125, 0.125);
 
-	var lineGeometry = new THREE.LineGeometry();
+	var lineGeometry = new THREE.BufferGeometry( );
+	lineGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( [ 0, 0, 0,	1, 0, 0 ], 3 ) );
+	var line2Geometry = new THREE.LineGeometry();
+	line2Geometry.setPositions([0, 0, 0, 1, 0, 0])
 
-	// lineGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( [ 0, 0, 0,	1, 0, 0 ], 3 ) );
-	lineGeometry.setPositions([0, 0, 0, 1, 0, 0])
+	var CircleGeometry = function ( radius, arc ) {
 
-	var CircleGeometry = function (radius, arc) {
-
-		var geometry = new THREE.LineGeometry();
+		var geometry = new THREE.BufferGeometry( );
 		var vertices = [];
 
-		for (var i = 0; i <= 64 * arc; ++i) {
+		for ( var i = 0; i <= 64 * arc; ++ i ) {
 
-			vertices.push(0, Math.cos(i / 32 * Math.PI) * radius, Math.sin(i / 32 * Math.PI) * radius);
+			vertices.push( 0, Math.cos( i / 32 * Math.PI ) * radius, Math.sin( i / 32 * Math.PI ) * radius );
 
 		}
 
-		//geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-		geometry.setPositions(vertices)
+		geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+
 
 		return geometry;
 
@@ -832,25 +846,25 @@ THREE.TransformControlsGizmo = function () {
 	var gizmoTranslate = {
 		X: [
 			[new THREE.Mesh(arrowGeometry, matRed), [1, 0, 0], [0, 0, - Math.PI / 2], null, 'fwd'],
-			[new THREE.Line2(lineGeometry, matLineRed)]
+			[new THREE.Line2(line2Geometry, matLine2Red)]
 		],
-		Y: [
-			[new THREE.Mesh(arrowGeometry, matGreen), [0, 1, 0], null, null, 'fwd'],
-			[new THREE.Line2(lineGeometry, matLineGreen), null, [0, 0, Math.PI / 2]]
-		],
+		// Y: [
+		// 	[new THREE.Mesh(arrowGeometry, matGreen), [0, 1, 0], null, null, 'fwd'],
+		// 	[new THREE.Line2(lineGeometry, matLineGreen), null, [0, 0, Math.PI / 2]]
+		// ],
 		Z: [
 			[new THREE.Mesh(arrowGeometry, matBlue), [0, 0, 1], [Math.PI / 2, 0, 0], null, 'fwd'],
-			[new THREE.Line2(lineGeometry, matLineBlue), null, [0, - Math.PI / 2, 0]]
+			[new THREE.Line2(line2Geometry, matLine2Blue), null, [0, - Math.PI / 2, 0]]
 		],
-		XYZ: [
-			[new THREE.Mesh(new THREE.OctahedronBufferGeometry(0.1, 0), matWhiteTransparent.clone()), [0, 0, 0], [0, 0, 0]]
-		],
-		XY: [
-			[new THREE.Mesh(new THREE.PlaneBufferGeometry(0.295, 0.295), matYellowTransparent.clone()), [0.15, 0.15, 0]],
-		],
-		YZ: [
-			[new THREE.Mesh(new THREE.PlaneBufferGeometry(0.295, 0.295), matCyanTransparent.clone()), [0, 0.15, 0.15], [0, Math.PI / 2, 0]],
-		],
+		// XYZ: [
+		// 	[new THREE.Mesh(new THREE.OctahedronBufferGeometry(0.1, 0), matWhiteTransparent.clone()), [0, 0, 0], [0, 0, 0]]
+		// ],
+		// XY: [
+		// 	[new THREE.Mesh(new THREE.PlaneBufferGeometry(0.295, 0.295), matYellowTransparent.clone()), [0.15, 0.15, 0]],
+		// ],
+		// YZ: [
+		// 	[new THREE.Mesh(new THREE.PlaneBufferGeometry(0.295, 0.295), matCyanTransparent.clone()), [0, 0.15, 0.15], [0, Math.PI / 2, 0]],
+		// ],
 		XZ: [
 			[new THREE.Mesh(new THREE.PlaneBufferGeometry(0.295, 0.295), matMagentaTransparent.clone()), [0.15, 0, 0.15], [- Math.PI / 2, 0, 0]],
 		]
@@ -891,44 +905,44 @@ THREE.TransformControlsGizmo = function () {
 			[new THREE.Line(TranslateHelperGeometry(), matHelper), null, null, null, 'helper']
 		],
 		X: [
-			[new THREE.Line2(lineGeometry, matHelper.clone()), [- 1e3, 0, 0], null, [1e6, 1, 1], 'helper']
+			[new THREE.Line2(line2Geometry, matHelper.clone()), [- 1e3, 0, 0], null, [1e6, 1, 1], 'helper']
 		],
 		Y: [
-			[new THREE.Line2(lineGeometry, matHelper.clone()), [0, - 1e3, 0], [0, 0, Math.PI / 2], [1e6, 1, 1], 'helper']
+			[new THREE.Line2(line2Geometry, matHelper.clone()), [0, - 1e3, 0], [0, 0, Math.PI / 2], [1e6, 1, 1], 'helper']
 		],
 		Z: [
-			[new THREE.Line2(lineGeometry, matHelper.clone()), [0, 0, - 1e3], [0, - Math.PI / 2, 0], [1e6, 1, 1], 'helper']
+			[new THREE.Line2(line2Geometry, matHelper.clone()), [0, 0, - 1e3], [0, - Math.PI / 2, 0], [1e6, 1, 1], 'helper']
 		]
 	};
 
 	var gizmoRotate = {
 		X: [
-			[new THREE.Line2(CircleGeometry(1, 0.5), matLineRed)],
+			[new THREE.Line(CircleGeometry(1, 0.5), matLineRed)],
 			[new THREE.Mesh(new THREE.OctahedronBufferGeometry(0.04, 0), matRed), [0, 0, 0.99], null, [1, 3, 1]],
 		],
 		Y: [
-			[new THREE.Line2(CircleGeometry(1, 0.5), matLineGreen), null, [0, 0, - Math.PI / 2]],
+			[new THREE.Line(CircleGeometry(1, 0.5), matLineGreen), null, [0, 0, - Math.PI / 2]],
 			[new THREE.Mesh(new THREE.OctahedronBufferGeometry(0.04, 0), matGreen), [0, 0, 0.99], null, [3, 1, 1]],
 		],
 		Z: [
-			[new THREE.Line2(CircleGeometry(1, 0.5), matLineBlue), null, [0, Math.PI / 2, 0]],
+			[new THREE.Line(CircleGeometry(1, 0.5), matLineBlue), null, [0, Math.PI / 2, 0]],
 			[new THREE.Mesh(new THREE.OctahedronBufferGeometry(0.04, 0), matBlue), [0.99, 0, 0], null, [1, 3, 1]],
 		],
 		E: [
-			[new THREE.Line2(CircleGeometry(1.25, 1), matLineYellowTransparent), null, [0, Math.PI / 2, 0]],
+			[new THREE.Line(CircleGeometry(1.25, 1), matLineYellowTransparent), null, [0, Math.PI / 2, 0]],
 			[new THREE.Mesh(new THREE.CylinderBufferGeometry(0.03, 0, 0.15, 4, 1, false), matLineYellowTransparent), [1.17, 0, 0], [0, 0, - Math.PI / 2], [1, 1, 0.001]],
 			[new THREE.Mesh(new THREE.CylinderBufferGeometry(0.03, 0, 0.15, 4, 1, false), matLineYellowTransparent), [- 1.17, 0, 0], [0, 0, Math.PI / 2], [1, 1, 0.001]],
 			[new THREE.Mesh(new THREE.CylinderBufferGeometry(0.03, 0, 0.15, 4, 1, false), matLineYellowTransparent), [0, - 1.17, 0], [Math.PI, 0, 0], [1, 1, 0.001]],
 			[new THREE.Mesh(new THREE.CylinderBufferGeometry(0.03, 0, 0.15, 4, 1, false), matLineYellowTransparent), [0, 1.17, 0], [0, 0, 0], [1, 1, 0.001]],
 		],
 		XYZE: [
-			[new THREE.Line2(CircleGeometry(1, 1), matLineGray), null, [0, Math.PI / 2, 0]]
+			[new THREE.Line(CircleGeometry(1, 1), matLineGray), null, [0, Math.PI / 2, 0]]
 		]
 	};
 
 	var helperRotate = {
 		AXIS: [
-			[new THREE.Line2(lineGeometry, matHelper.clone()), [- 1e3, 0, 0], null, [1e6, 1, 1], 'helper']
+			[new THREE.Line(lineGeometry, matHelper.clone()), [- 1e3, 0, 0], null, [1e6, 1, 1], 'helper']
 		]
 	};
 
@@ -953,30 +967,30 @@ THREE.TransformControlsGizmo = function () {
 	var gizmoScale = {
 		X: [
 			[new THREE.Mesh(scaleHandleGeometry, matRed), [0.8, 0, 0], [0, 0, - Math.PI / 2]],
-			[new THREE.Line2(lineGeometry, matLineRed), null, null, [0.8, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineRed), null, null, [0.8, 1, 1]]
 		],
 		Y: [
 			[new THREE.Mesh(scaleHandleGeometry, matGreen), [0, 0.8, 0]],
-			[new THREE.Line2(lineGeometry, matLineGreen), null, [0, 0, Math.PI / 2], [0.8, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineGreen), null, [0, 0, Math.PI / 2], [0.8, 1, 1]]
 		],
 		Z: [
 			[new THREE.Mesh(scaleHandleGeometry, matBlue), [0, 0, 0.8], [Math.PI / 2, 0, 0]],
-			[new THREE.Line2(lineGeometry, matLineBlue), null, [0, - Math.PI / 2, 0], [0.8, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineBlue), null, [0, - Math.PI / 2, 0], [0.8, 1, 1]]
 		],
 		XY: [
 			[new THREE.Mesh(scaleHandleGeometry, matYellowTransparent), [0.85, 0.85, 0], null, [2, 2, 0.2]],
-			[new THREE.Line2(lineGeometry, matLineYellow), [0.855, 0.98, 0], null, [0.125, 1, 1]],
-			[new THREE.Line2(lineGeometry, matLineYellow), [0.98, 0.855, 0], [0, 0, Math.PI / 2], [0.125, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineYellow), [0.855, 0.98, 0], null, [0.125, 1, 1]],
+			[new THREE.Line(lineGeometry, matLineYellow), [0.98, 0.855, 0], [0, 0, Math.PI / 2], [0.125, 1, 1]]
 		],
 		YZ: [
 			[new THREE.Mesh(scaleHandleGeometry, matCyanTransparent), [0, 0.85, 0.85], null, [0.2, 2, 2]],
-			[new THREE.Line2(lineGeometry, matLineCyan), [0, 0.855, 0.98], [0, 0, Math.PI / 2], [0.125, 1, 1]],
-			[new THREE.Line2(lineGeometry, matLineCyan), [0, 0.98, 0.855], [0, - Math.PI / 2, 0], [0.125, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineCyan), [0, 0.855, 0.98], [0, 0, Math.PI / 2], [0.125, 1, 1]],
+			[new THREE.Line(lineGeometry, matLineCyan), [0, 0.98, 0.855], [0, - Math.PI / 2, 0], [0.125, 1, 1]]
 		],
 		XZ: [
 			[new THREE.Mesh(scaleHandleGeometry, matMagentaTransparent), [0.85, 0, 0.85], null, [2, 0.2, 2]],
-			[new THREE.Line2(lineGeometry, matLineMagenta), [0.855, 0, 0.98], null, [0.125, 1, 1]],
-			[new THREE.Line2(lineGeometry, matLineMagenta), [0.98, 0, 0.855], [0, - Math.PI / 2, 0], [0.125, 1, 1]]
+			[new THREE.Line(lineGeometry, matLineMagenta), [0.855, 0, 0.98], null, [0.125, 1, 1]],
+			[new THREE.Line(lineGeometry, matLineMagenta), [0.98, 0, 0.855], [0, - Math.PI / 2, 0], [0.125, 1, 1]]
 		],
 		XYZX: [
 			[new THREE.Mesh(new THREE.BoxBufferGeometry(0.125, 0.125, 0.125), matWhiteTransparent.clone()), [1.1, 0, 0]],

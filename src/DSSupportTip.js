@@ -5,7 +5,7 @@ export default class DSSupportTip {
 
     constructor(parent, contactPosition, baseY, tipDiameter = 0.3, selected = false) {
         this.parent = parent;
-        this.contactPosition = contactPosition;
+        this.contactPosition = contactPosition.clone();
         this.baseY = baseY;
         this.selected = false;
 
@@ -28,7 +28,7 @@ export default class DSSupportTip {
         this.tip.mesh = new THREE.Mesh(tipGeometry, DSSupport.material);
         DSSupport.raycastGroup.add(this.tip.mesh);
 
-        this.supportHeightHandle = new THREE.Mesh(new THREE.SphereGeometry(this.parent.shaft.diameter, 8, 6), new THREE.MeshBasicMaterial({ color: 0xccff55, opacity: 0.5, transparent: true }));
+        this.supportHeightHandle = new THREE.Mesh(new THREE.SphereGeometry(this.parent.shaft.diameter * 0.75, 8, 6), new THREE.MeshBasicMaterial({ color: 0xccff55, opacity: 0.5, transparent: true }));
         this.supportHeightHandle.visible = false;
         DSSupport.raycastGroup.add(this.supportHeightHandle);
 
@@ -55,7 +55,7 @@ export default class DSSupportTip {
         const jointPosition = this.parent.jointPosition.clone();
         jointPosition.y = this.baseY;
         this.supportHeightHandle.position.copy(jointPosition);
-        
+
         const offset = jointPosition.clone().sub(this.contactPosition);
         this.tip.mesh.scale.y = offset.length();
         this.tipEnd.mesh.scale.y = 1 / this.tip.mesh.scale.y;
@@ -69,11 +69,19 @@ export default class DSSupportTip {
     moveTipTo(point) {
         this.contactPosition.copy(point);
         this.setPositions();
+        this.parent.checkLowestPointingUp();
+        this.parent.setPositions();
     }
-    
+
+    moveToNewPosition(contactPosition, basePosition) {
+        this.contactPosition.copy(contactPosition);
+        this.baseY = this.parent.jointPosition.y;
+        this.setPositions();
+    }
+
     moveBaseHeight(offset) {
         this.baseY += offset;
-        if(this.baseY < 1.5) {
+        if (this.baseY < 1.5) {
             this.baseY = 1.5;
         }
         this.setPositions();
@@ -99,6 +107,13 @@ export default class DSSupportTip {
         this.tipEnd.mesh.material = DSSupport.material;
         this.supportHeightHandle.visible = false;
         this.selected = false;
+    }
+
+    adjustDiameter(value) {
+        this.tip.diameter *= value;
+        this.tip.mesh.geometry.scale(value, 1, value);
+        this.tipEnd.mesh.geometry.scale(value, value, value);
+        // this.supportHeightHandle.geometry.scale(value, value, value);
     }
 
     dispose() {

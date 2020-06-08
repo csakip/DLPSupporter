@@ -14,7 +14,7 @@ export default function PanelInfo() {
           </div>
         </div>
       </div>
-      <p>Click the icons on the left or press 1-5 to select modes.<br />Keyboard shortcuts are shown in brackets [ ] next to the function.</p>
+      <p>Click the icons on the left or press F1-F5 to select modes.<br />Keyboard shortcuts are shown in brackets [ ] next to the function.</p>
     </>
   )
 }

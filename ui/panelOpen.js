@@ -2,21 +2,18 @@ export default function PanelOpen(props) {
   const a3d = window.data.my3dApp;
   const [mode, setMode] = React.useState(null);
   const [fileModalOpen, setFileModalOpen] = React.useState(false);
-  const [minHeight, setMinHeight] = React.useState(a3d.minHeight);
-  React.useEffect(() => {
-    window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
-    return () => {
-      window.data.removeCallbacks('panelOpen');
-    };
-  }, []);
+  const [minHeight, setMinHeight] = React.useState(a3d.minHeight); // React.useEffect(() => {
+  //   window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
+  //   return () => { window.data.removeCallbacks('panelOpen'); }
+  // }, []);
 
-  function clickTest() {
-    window.data.setMinHeight(minHeight + 1);
-  }
+  function changeMinHeight(value) {
+    a3d.setMinHeight(value);
+    setMinHeight(value);
+  } // function setMinheightCallback(newMinHeight) {
+  //   setMinHeight(newMinHeight);
+  // }
 
-  function setMinheightCallback(newMinHeight) {
-    setMinHeight(newMinHeight);
-  }
 
   function changeMode(newMode) {
     if (newMode === mode) newMode = null;
@@ -42,11 +39,14 @@ export default function PanelOpen(props) {
     setFileModalOpen(false);
   }
 
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h3", {
-    className: "title"
-  }, minHeight), /*#__PURE__*/React.createElement("button", {
-    onClick: () => clickTest()
-  }, "Tick"), /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", null, "Minimum height"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: minHeight,
+    step: "0.5",
+    onChange: e => changeMinHeight(e.target.value),
+    min: "0",
+    max: "20"
+  }), /*#__PURE__*/React.createElement("div", {
     className: "content"
   }, /*#__PURE__*/React.createElement("h3", null, "File"), /*#__PURE__*/React.createElement("div", {
     className: "buttons"

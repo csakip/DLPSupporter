@@ -11,5 +11,5 @@ export default function PanelInfo() {
     }
   }, "v0.1 beta")), /*#__PURE__*/React.createElement("div", {
     className: "centered"
-  }, /*#__PURE__*/React.createElement("p", null, "Created by Peter Csaki.", /*#__PURE__*/React.createElement("br", null), "Copyright \xA9 2020")))), /*#__PURE__*/React.createElement("p", null, "Click the icons on the left or press 1-5 to select modes.", /*#__PURE__*/React.createElement("br", null), "Keyboard shortcuts are shown in brackets [ ] next to the function."));
+  }, /*#__PURE__*/React.createElement("p", null, "Created by Peter Csaki.", /*#__PURE__*/React.createElement("br", null), "Copyright \xA9 2020")))), /*#__PURE__*/React.createElement("p", null, "Click the icons on the left or press F1-F5 to select modes.", /*#__PURE__*/React.createElement("br", null), "Keyboard shortcuts are shown in brackets [ ] next to the function."));
 }

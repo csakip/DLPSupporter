@@ -4,14 +4,18 @@ import DSCameraControls from './src/DSCameraControls.js';
 import DSSupport from './src/DSSupport.js';
 import DSPreset from './src/DSPreset.js';
 
+const bedSize = new THREE.Vector2(115, 65);
+
 export default class app3d {
     constructor() {
         this.sidePanelWidth = 400;
         this.minHeight = 3;
+        this.minHeightMesh = null;
         this.presets = [];
         this.selectedPreset = {};
         this.supports = [];
         this.raycastGroup = new THREE.Group();
+        this.hiddenGroup = new THREE.Group();
         this.raycastGroupHiding = new THREE.Group();
         this.raycaster = new THREE.Raycaster();
         this.mouseMovePosition = new THREE.Vector2();
@@ -39,13 +43,14 @@ export default class app3d {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0.4, 0.4, 0.4);
         this.scene.add(this.raycastGroup);
+        this.scene.add(this.hiddenGroup);
         this.scene.add(this.raycastGroupHiding);
 
         this.cameraControls = new DSCameraControls(this.scene, this.orbitControls, this.sidePanelWidth, this.render.bind(this));
         this.setupLights(this.cameraControls.camera, this.scene, this.sidePanelWidth);
         this.setupMouseRealCoordsHelper();
         this.setupControls();
-        this.makeMaterial();
+        this.makeMaterials();
         this.setupBuildplate();
         this.setupLine();
         this.setupSupports();
@@ -59,7 +64,7 @@ export default class app3d {
         this.setupCommsWithUI();
         this.setupHotkeys();
 
-        this.loadStl('./Trimmer.stl', this.meshMaterial);
+        this.loadStl('./single.stl', this.meshMaterial);
         this.orbitControls.update();
 
     }
@@ -94,13 +99,18 @@ export default class app3d {
     }
 
     setupHotkeys() {
-        hotkeys('h,up,down,left,right,n', (event, handler) => {
-            switch (handler.key) {
+        hotkeys('*', (event, handler) => {
+            // console.log(event.key)
+            switch (event.key) {
+                case 'v': this.toggleMeshVisibility(); break;
                 case 'h': this.cameraControls.homeCamera(); break;
-                case 'up': this.moveSelectedSupport(0, -1); break;
-                case 'down': this.moveSelectedSupport(0, 1); break;
-                case 'left': this.moveSelectedSupport(-1, 0); break;
-                case 'right': this.moveSelectedSupport(1, 0); break;
+                case 'ArrowUp': this.moveSelectedSupport(0, event.shiftKey ? -0.1 : -0.5); break;
+                case 'ArrowDown': this.moveSelectedSupport(0, event.shiftKey ? 0.1 : 0.5); break;
+                case 'ArrowLeft': this.moveSelectedSupport(event.shiftKey ? -0.1 : -0.5, 0); break;
+                case 'ArrowRight': this.moveSelectedSupport(event.shiftKey ? 0.1 : 0.5, 0); break;
+                case '+':
+                case '=': { event.preventDefault(); this.adjustSelectedSupportDiameter(1.1, event.shiftKey, !event.ctrlKey); break; }
+                case '-': { event.preventDefault(); this.adjustSelectedSupportDiameter(0.9, event.shiftKey, !event.ctrlKey); break; }
             }
         });
     }
@@ -109,6 +119,9 @@ export default class app3d {
         window.addEventListener('u2sTransformControlModeSelect', e => this.handleTransformControlModeSelect(e));
         window.addEventListener('u2sActivePanel', e => {
             this.activePanel = e.detail.activePanel;
+            this.minHeightMesh.visible = this.activePanel === 'open';
+            this.deselectAllSupports();
+            this.render();
             if (this.activePanel !== 'support') {
                 this.line.visible = false;
                 if (this.materialShader) this.materialShader.uniforms.cursorHeight.value = -1000;
@@ -184,6 +197,7 @@ export default class app3d {
             });
             this.transformControl.addEventListener('objectChange', () => {
                 if (this.mesh) {
+                    // this.normalHelper.update();
                     this.moveMeshToMinHeight();
                     if (this.transformControl.mode === 'translate') {
                         const offset = this.positionForTransform.sub(this.mesh.position).negate();
@@ -227,7 +241,7 @@ export default class app3d {
                 if (intersects[0].object == this.mesh) {
                     this.worldNormal = this.mesh.localToWorld(intersects[0].face.normal);
                     this.worldNormal.addScaledVector(this.mesh.position, -1);
-                    if (this.worldNormal.y <= 0 && intersects[0].point.y >= 1.5) {
+                    if (intersects[0].point.y >= 1.5) {
                         const p = this.selectedPreset;
                         if (evt.ctrlKey) {
                             const selectedSupports = this.supports.filter(s => s.selected);
@@ -237,7 +251,9 @@ export default class app3d {
                                 this.supports[this.supports.length - 1].addTip(intersects[0].point, this.worldNormal, p.tipDiameter, p.tipLength, false);
                             }
                         } else {
-                            this.supports.push(new Support(intersects[0].point, this.worldNormal, p.name, p.shaftDiameter, p.tipLength, p.tipDiameter, 0, p.bottomDiameter));
+                            const s = new Support(intersects[0].point, this.worldNormal, p.name, p.shaftDiameter, p.tipLength, p.tipDiameter, 0, p.bottomDiameter);
+                            this.supports.push(s);
+                            this.newSupport = s;
                         }
                         this.render();
                     }
@@ -273,7 +289,7 @@ export default class app3d {
                         var intersects = this.getIntersectPlane(this.mouseMovePosition);
                         if (intersects) {
                             if (!s.selected) {
-                                s.setHeightHandlesVisibility(true);
+                                head.supportHeightHandle.visible = true;
                             }
                             this.supportDragData = {
                                 xz: false,
@@ -292,8 +308,20 @@ export default class app3d {
         if (this.mesh) {
             this.mouseMovePosition.fromArray(this.getMousePosition(this.container, evt.clientX, evt.clientY));
 
-            if (this.supportDragData) {
+            if (this.newSupport) {
+                // Dragging the newly created support
+                var intersects = this.getIntersects(this.mouseMovePosition, [this.mesh]);
+                if (intersects.length > 0 && intersects[0].object == this.mesh) {
+                    this.line.visible = false;
+                    this.worldNormal.copy(this.mesh.localToWorld(intersects[0].face.normal));
+                    this.worldNormal.addScaledVector(this.mesh.position, -1);
+                    this.newSupport.moveToNewPosition(intersects[0].point, this.worldNormal, this.selectedPreset.tipLength);
+                    this.drawShaderHeightLine(intersects[0].point.y)
+                    this.render();
+                }
+            } else if (this.supportDragData) {
                 if (this.supportDragData.tip) {
+                    // Dragging a tip
                     var intersects = this.getIntersects(this.mouseMovePosition, [this.mesh]);
                     if (intersects.length > 0) {
                         this.worldNormal.copy(this.mesh.localToWorld(intersects[0].face.normal));
@@ -356,15 +384,23 @@ export default class app3d {
 
     onMouseUp(evt) {
         this.orbitControls.enabled = true;
+        this.newSupport = null;
 
         if (this.supportDragData && !this.supportDragData.moved) {
             if (this.supportDragData.support.selected) {
-                if (!evt.ctrlKey) {
-                    this.supports.filter(s => (s.selected && s.id != this.supportDragData.support.id)).forEach(s => s.deselect());
+                if (this.supportDragData.tip) {
+                    this.supports.forEach(s => s.deselect());
+                    this.supportDragData.head.select();
                 } else {
-                    this.supportDragData.support.deselect();
+                    this.supports.filter(s => !s.selected).forEach(s => s.deselectTips());
+                    if (!evt.ctrlKey) {
+                        this.supports.filter(s => (s.selected && s.id != this.supportDragData.support.id)).forEach(s => s.deselect());
+                    } else {
+                        this.supportDragData.support.deselect();
+                    }
                 }
             } else {
+                this.supports.filter(s => !s.selected).forEach(s => s.deselectTips());
                 if (!evt.ctrlKey) {
                     this.supports.filter(s => s.selected).forEach(s => s.deselect());
                 }
@@ -374,13 +410,13 @@ export default class app3d {
             window.data.go('selectedSupport');
         } else if (!this.orbitControlMoved && (!this.supportDragData || !this.supportDragData.moved)) {
             if (!evt.ctrlKey) {
-                this.supports.filter(s => s.selected).forEach(s => s.deselect());
+                this.supports.forEach(s => s.deselect());
                 this.render();
                 window.data.go('selectedSupport');
             }
-        } else if (this.supportDragData && this.supportDragData.moved) {
-            if (!this.supportDragData.support.selected) {
-                this.supportDragData.support.setHeightHandlesVisibility(false);
+        } else if (this.supportDragData && this.supportDragData.moved && this.supportDragData.head) {
+            if (!this.supportDragData.head.selected) {
+                this.supportDragData.head.supportHeightHandle.visible = false;
                 this.render();
             }
             window.data.go('selectedSupport');
@@ -400,9 +436,13 @@ export default class app3d {
         this.linePoints.push(p2.x, p2.y, p2.z);
         this.line.geometry.setPositions(this.linePoints);
         this.line.geometry.verticesNeedUpdate = true;
-        this.lineMaterial.color.copy(n.y <= 0 && point.y >= 1.5 ? this.colorGreen : this.colorRed);
-        // Send the cursor's height to the material shader
-        if (this.materialShader) this.materialShader.uniforms.cursorHeight.value = point.y;
+        this.lineMaterial.color.copy(n.y <= 0 && point.y >= 1.5 ? this.colorGreen : this.colorRed);        
+        this.drawShaderHeightLine(point.y);
+    }
+
+    // Send the cursor's height to the material shader
+    drawShaderHeightLine(y) {
+        if (this.materialShader) this.materialShader.uniforms.cursorHeight.value = y;
     }
 
     // Mouse screen X Y positions
@@ -459,12 +499,13 @@ export default class app3d {
         loader.load(fileName, (geometry) => {
             this.mesh = new THREE.Mesh(geometry, this.meshMaterial);
             this.mesh.castShadow = true;
+            this.mesh.renderOrder = 1;
             this.raycastGroup.add(this.mesh);
             this.moveMeshToMinHeight();
             Support.setMesh(this.mesh);
 
-            // var helper = new VertexNormalsHelper( this.mesh, 2, 0x00ff00, 1 );
-            // this.scene.add( helper )               
+            // this.normalHelper = new VertexNormalsHelper(this.mesh, 2, 0x00ff00, 1);
+            // this.scene.add(this.normalHelper);
 
             this.render();
         });
@@ -506,10 +547,11 @@ export default class app3d {
         this.mouseRealCoordsHelper.visible = false;
     }
 
-    makeMaterial() {
+    makeMaterials() {
         this.meshMaterial = new THREE.MeshPhongMaterial({
             color: new THREE.Color(0.4, 0.8, 1),
             shininess: 50,
+            transparent: true
         });
         this.meshMaterial.onBeforeCompile = (shader) => {
             shader.uniforms.cursorHeight = { value: -100 };
@@ -523,7 +565,7 @@ export default class app3d {
                 vWorldPosition = modelMatrix * vec4(position, 1);
                                 
                 // Red color on bottom
-                vDotToNormal = smoothstep(0.8, 1.0, dot(viewMatrix * DOWN, vec4(normalMatrix * normal, 1)));
+                vDotToNormal = smoothstep(0.85, 1.0, dot(viewMatrix * DOWN, vec4(normalMatrix * normal, 1.0)));
             `);
 
             shader.fragmentShader = 'uniform float cursorHeight;\nvarying vec4 vWorldPosition;\nvarying float vDotToNormal;\n' + shader.fragmentShader;
@@ -556,9 +598,6 @@ export default class app3d {
 
         this.supportMaterialSelected = this.supportMaterial.clone();
         this.supportMaterialSelected.color = new THREE.Color(0.1, 0.6, 0.1);
-
-        // this.supportMaterialHover = this.supportMaterial.clone();
-        // this.supportMaterialHover.color = new THREE.Color(0.1, 0.6, 0.1);
     }
 
     setupBuildplate() {
@@ -569,17 +608,24 @@ export default class app3d {
         //     shininess: 0,
         //     specular: 0x222222
         // });
-        var material = new THREE.MeshBasicMaterial({ color: 0x555555 });
+        var texture = THREE.ImageUtils.loadTexture('./img/gridTexture.png');
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.repeat = new THREE.Vector2(bedSize.x / 10, bedSize.y / 10);
+        texture.offset = new THREE.Vector2(0, bedSize.x / 100);
+        texture.needsUpdate = true;
+        var material = new THREE.MeshBasicMaterial({ color: 0x777777, map: texture });
+
         var plane = new THREE.Mesh(this.buildplate, material);
         plane.rotateX(-Math.PI / 2);
-        this.buildplate.scale(115, 65, 1);
+        this.buildplate.scale(bedSize.x, bedSize.y, 1);
         // plane.receiveShadow = true;
         this.scene.add(plane);
 
         // Outline of this.buildplate
         material = new THREE.LineBasicMaterial({ color: 0x444444 });
         var bpPoints = [];
-        var scaleVector = new THREE.Vector3(115, 1, 65).multiplyScalar(0.5);
+        var scaleVector = new THREE.Vector3(bedSize.x, 1, bedSize.y).multiplyScalar(0.5);
         bpPoints.push(new THREE.Vector3(-1, 0, -1).multiply(scaleVector));
         bpPoints.push(new THREE.Vector3(1, 0, -1).multiply(scaleVector));
         bpPoints.push(new THREE.Vector3(1, 0, 1).multiply(scaleVector));
@@ -591,12 +637,20 @@ export default class app3d {
         geometry = new THREE.SphereGeometry(0.5, 8, 8);
         material = new THREE.MeshBasicMaterial({ color: 0x559955 });
         var sphere = new THREE.Mesh(geometry, material);
-        sphere.position.copy(new THREE.Vector3(-115 / 2, 0, -65 / 2));
+        sphere.position.copy(new THREE.Vector3(-bedSize.x / 2, 0, -bedSize.y / 2));
         this.scene.add(sphere);
+
+        geometry = new THREE.BoxBufferGeometry(bedSize.x, 1, bedSize.y);
+        geometry.translate(0, 0.5, 0);
+        material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.1, transparent: true });
+        this.minHeightMesh = new THREE.Mesh(geometry, material);
+        this.scene.add(this.minHeightMesh);
+        this.minHeightMesh.renderOrder = 2;
+        this.minHeightMesh.scale.set(1, 1 * this.minHeight, 1);
     }
 
+    // Support manipulations
 
-    // ---------------------------------- Support manipulations from UI
     selectSupport(id, deselectOthers) {
         if (deselectOthers) {
             this.supports.forEach(s => {
@@ -656,6 +710,8 @@ export default class app3d {
             if (s.selected) {
                 s.dispose();
                 return null;
+            } else {
+                s.deleteSelectedTips();
             }
             return s;
         });
@@ -713,10 +769,42 @@ export default class app3d {
         this.render();
     }
 
-    setSupportHeightToNormal() {
-        this.supports.forEach(s => s.setHeightToNormal());
+    toggleMeshVisibility() {
+        if (this.raycastGroup.children.includes(this.mesh)) {
+            this.raycastGroup.remove(this.mesh);
+            this.hiddenGroup.add(this.mesh);
+        } else {
+            this.hiddenGroup.remove(this.mesh);
+            this.raycastGroup.add(this.mesh);
+        }
+        this.meshMaterial.opacity = this.meshMaterial.opacity === 1 ? 0.2 : 1;
         this.render();
     }
 
+    adjustSelectedSupportDiameter(value, tipsOnly, tipsAlso) {
+        const selectedSupports = this.supports.filter(s => s.selected);
+        if (selectedSupports.length == 0 && this.supports.length > 0) {
+            const tipSet = this.supports.some(s => {
+                const tip = s.tips.find(t => t.selected);
+                if (tip) {
+                    tip.adjustDiameter(value);
+                    return true;
+                }
+            })
+            if (!tipSet) this.supports[this.supports.length - 1].adjustDiameter(value, tipsOnly, tipsAlso);
+        } else {
+            selectedSupports.forEach(s => {
+                s.adjustDiameter(value, tipsOnly, tipsAlso);
+            });
+        }
+        this.render();
+    }
+
+    setMinHeight(value) {
+        this.minHeight = value;
+        this.moveMeshToMinHeight();
+        this.minHeightMesh.scale.set(1, 1 * this.minHeight, 1);
+        this.render();
+    }
 }
 window.data.set3dApp(new app3d());
