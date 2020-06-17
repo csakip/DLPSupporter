@@ -286,6 +286,17 @@ export default class DSSupport {
     this.setJointToHighPoint(contactPosition.y + offset.y, false);
     this.checkLowestPointingUp();
     this.setPositions();
+    window.data.go('selectedSupport');
+  }
+
+  setTipEndSphere(sphereDiameter) {
+    const t = this.tips.filter(t => t.selected);
+
+    if (t.length > 0) {
+      t.forEach(t => t.setTipEndSphere(sphereDiameter));
+    } else {
+      this.tips.forEach(t => t.setTipEndSphere(sphereDiameter));
+    }
   }
 
   checkLowestPointingUp() {

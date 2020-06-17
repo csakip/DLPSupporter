@@ -28,7 +28,7 @@ export default function PanelSupports(props) {
 
     return (() => {
       window.data.removeCallbacks('panelSupport');
-      hotkeys.unbind('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n');
+      hotkeys.unbind('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n,t,shift+t');
     })
   }, []);
 
@@ -39,7 +39,7 @@ export default function PanelSupports(props) {
   }, [presetContext]);
 
   function setupHotkeys() {
-    hotkeys('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n', function (event, handler) {
+    hotkeys('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n,t,shift+t', function (event, handler) {
       switch (handler.key) {
         case ('ctrl+a'): {
           selectAllSupports();
@@ -63,6 +63,13 @@ export default function PanelSupports(props) {
         }
         case ('n'): {
           setSupportHeightToNormal();
+          break;
+        }
+        case ('t'): {
+          setTipEndSpheres(true);
+          break;
+        } case ('shift+t'): {
+          setTipEndSpheres(false);
           break;
         }
         default: {
@@ -159,7 +166,7 @@ export default function PanelSupports(props) {
 
   function invertSupportsSelection() {
     a3d.invertSupportsSelection();
-    setSupports((prev) => [...prev])
+    setSupports((prev) => [...prev]);
   }
 
   function setSupportHeightToNormal() {
@@ -179,6 +186,11 @@ export default function PanelSupports(props) {
   function displayHelp(type, e) {
     e.preventDefault();
     console.log(type);
+  }
+
+  function setTipEndSpheres(enabled) {
+    a3d.setTipEndSpheres(enabled);
+    setSupports((prev) => [...prev]);
   }
 
   return (
@@ -231,7 +243,6 @@ export default function PanelSupports(props) {
         </div>
       </div> */}
 
-
       <div className='content noBottom'>
         <h4 className="is-pulled-left">Supports <a className="iconText" href="#" onClick={(e) => displayHelp("supports", e)}>?</a></h4>
         {supports.length > 0 && <a className="tag is-pulled-right" onClick={() => invertSupportsSelection()}>Invert<span className='shortcut'>I</span></a>}
@@ -245,6 +256,9 @@ export default function PanelSupports(props) {
                 <tr key={s.id} onClick={(e) => selectSupport(s, e)} className={s.selected ? 'is-selected' : undefined}>
                   <td>{s.id}</td>
                   <td>{s.presetName}{s.isMini && " (mini)"}</td>
+                  <td>
+                    {s.tips.map((t, idx) => <span key={idx} className={!s.selected && t.selected ? "selected" : undefined}>{t.tipSphere ? '\u23FA' : '\u25B2'}</span>)}
+                  </td>
                   <td className='has-text-right'><a href='#'>...</a></td>
                 </tr>
               ))}
@@ -252,6 +266,12 @@ export default function PanelSupports(props) {
           </table>
         </div>
       </div>
+
+      <div className='content noBottom buttons'>
+        {supports.length > 0 && <a className="button is-small" onClick={() => setTipEndSpheres(true)}>Set tip ends<span className='shortcut'>T</span></a>}
+        {supports.length > 0 && <a className="button is-small" onClick={() => setTipEndSpheres(false)}>Remove tip ends<span className='shortcut'>Shift+T</span></a>}
+      </div>
+
 
       {supports.length > 0 &&
         <div className="content">

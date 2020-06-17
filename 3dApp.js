@@ -32,7 +32,6 @@ export default class app3d {
     }
 
     init() {
-
         this.container = document.getElementById('container');
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth - this.sidePanelWidth, window.innerHeight);
@@ -61,12 +60,11 @@ export default class app3d {
         this.groundPlane.visible = false;
 
         this.setupEvents();
-        this.setupCommsWithUI();
         this.setupHotkeys();
 
         this.loadStl('./single.stl', this.meshMaterial);
+        // this.loadStl('./trimmer.stl', this.meshMaterial);
         this.orbitControls.update();
-
     }
 
     setupSupports() {
@@ -111,23 +109,21 @@ export default class app3d {
                 case '+':
                 case '=': { event.preventDefault(); this.adjustSelectedSupportDiameter(1.1, event.shiftKey, !event.ctrlKey); break; }
                 case '-': { event.preventDefault(); this.adjustSelectedSupportDiameter(0.9, event.shiftKey, !event.ctrlKey); break; }
+                // case 't': this.setTipEndSpheres(true); break;
+                // case 'T': this.setTipEndSpheres(false); break;
             }
         });
     }
 
-    setupCommsWithUI() {
-        window.addEventListener('u2sTransformControlModeSelect', e => this.handleTransformControlModeSelect(e));
-        window.addEventListener('u2sActivePanel', e => {
-            this.activePanel = e.detail.activePanel;
-            this.minHeightMesh.visible = this.activePanel === 'open';
-            this.deselectAllSupports();
-            this.render();
-            if (this.activePanel !== 'support') {
-                this.line.visible = false;
-                if (this.materialShader) this.materialShader.uniforms.cursorHeight.value = -1000;
-                this.render();
-            }
-        });
+    setActivePanel(panelName) {
+        this.activePanel = panelName;
+        this.minHeightMesh.visible = this.activePanel === 'open';
+        this.deselectAllSupports();
+        if (this.activePanel !== 'support') {
+            this.line.visible = false;
+            if (this.materialShader) this.materialShader.uniforms.cursorHeight.value = -1000;
+        }
+        this.render();
     }
 
     setupEvents() {
@@ -144,17 +140,19 @@ export default class app3d {
         };
     }
 
-    handleTransformControlModeSelect(e) {
-        if (e.detail.mode) {
+    setTransformControlMode(newMode) {
+        if (newMode) {
             if (this.transformControl) {
-                this.transformControl.setMode(e.detail.mode);
+                this.transformControl.setMode(newMode);
             } else {
-                this.createTransformControl(e.detail.mode);
+                this.createTransformControl(newMode);
             }
         } else {
-            this.transformControl.detach();
-            this.transformControl.dispose();
-            this.transformControl = undefined;
+            if (this.transformControl) {
+                this.transformControl.detach();
+                this.transformControl.dispose();
+                this.transformControl = undefined;
+            }
         }
         this.render();
     }
@@ -308,7 +306,37 @@ export default class app3d {
         if (this.mesh) {
             this.mouseMovePosition.fromArray(this.getMousePosition(this.container, evt.clientX, evt.clientY));
 
-            if (this.newSupport) {
+            if (this.layFlatCircle) {
+                // if (this.layFlatSideSelectorMesh) this.layFlatSideSelectorMesh.geometry.computeFaceNormals();
+                if (this.layFlatSideSelectorMesh) {
+                    var intersects = this.getIntersects(this.mouseMovePosition, [this.layFlatSideSelectorMesh]);
+                    if (intersects.length > 0) {
+                        this.worldNormal.copy(intersects[0].object.localToWorld(intersects[0].face.normal.clone()));
+                        this.drawNormalLineAndHeightBand(intersects[0].point, this.worldNormal, false);
+                        this.meshLayFlatMaterialShader.uniforms.highlightNormal = new THREE.Uniform(intersects[0].face.normal);
+                    } else {
+                        this.line.visible = false;
+                        this.meshLayFlatMaterialShader.uniforms.highlightNormal = new THREE.Uniform(this.downVector);
+                    }
+                } else {
+                    var intersects = this.getIntersects(this.mouseMovePosition, [this.mesh]);
+                    if (intersects.length > 0) {
+                        this.layFlatCircle.position.copy(intersects[0].point);
+                        this.worldNormal.copy(intersects[0].object.localToWorld(intersects[0].face.normal.clone()));
+                        const n = this.worldNormal.clone().addScaledVector(intersects[0].object.position, -1);
+                        const p2 = intersects[0].point.clone().add(n);
+                        this.layFlatCircle.lookAt(p2);
+                        this.layFlatCircle.translateZ(0.01);
+                        this.layFlatCircle.visible = true;
+                        this.drawNormalLineAndHeightBand(intersects[0].point, this.worldNormal, true);
+                    } else {
+                        this.layFlatCircle.visible = false;
+                        this.line.visible = false;
+                        this.materialShader.uniforms.cursorHeight.value = -1000;
+                    }
+                }
+                this.render();
+            } else if (this.newSupport) {
                 // Dragging the newly created support
                 var intersects = this.getIntersects(this.mouseMovePosition, [this.mesh]);
                 if (intersects.length > 0 && intersects[0].object == this.mesh) {
@@ -427,7 +455,7 @@ export default class app3d {
         this.positionForTransform = null;
     }
 
-    drawNormalLineAndHeightBand(point, normal) {
+    drawNormalLineAndHeightBand(point, normal, line = true) {
         if (!this.line.visible) this.line.visible = true;
         this.linePoints.length = 0;
         this.linePoints.push(point.x, point.y, point.z);
@@ -436,8 +464,12 @@ export default class app3d {
         this.linePoints.push(p2.x, p2.y, p2.z);
         this.line.geometry.setPositions(this.linePoints);
         this.line.geometry.verticesNeedUpdate = true;
-        this.lineMaterial.color.copy(n.y <= 0 && point.y >= 1.5 ? this.colorGreen : this.colorRed);        
-        this.drawShaderHeightLine(point.y);
+        this.lineMaterial.color.copy(n.y <= 0 && point.y >= 1.5 ? this.colorGreen : this.colorRed);
+        if (line) this.drawShaderHeightLine(point.y);
+    }
+
+    tls(...myNumb) {
+        console.log(myNumb.map(element => element.toLocaleString('fullwide', { useGrouping: false })));
     }
 
     // Send the cursor's height to the material shader
@@ -495,7 +527,7 @@ export default class app3d {
     }
 
     loadStl(fileName) {
-        var loader = new THREE.STLLoader();
+        const loader = new THREE.STLLoader();
         loader.load(fileName, (geometry) => {
             this.mesh = new THREE.Mesh(geometry, this.meshMaterial);
             this.mesh.castShadow = true;
@@ -508,20 +540,24 @@ export default class app3d {
             // this.scene.add(this.normalHelper);
 
             this.render();
+
+            window.data.go('meshLoaded', true);
         });
     }
 
     moveMeshToMinHeight() {
-        const position = this.mesh.geometry.attributes.position;
-        const vector = new THREE.Vector3();
-        var minPos = 1000;
-        for (let i = 0, l = position.count; i < l; i++) {
-            vector.fromBufferAttribute(position, i);
-            vector.applyMatrix4(this.mesh.matrixWorld);
-            if (minPos > vector.y) minPos = vector.y
+        if (this.mesh) {
+            const position = this.mesh.geometry.attributes.position;
+            const vector = new THREE.Vector3();
+            let minPos = 1000;
+            for (let i = 0, l = position.count; i < l; i++) {
+                vector.fromBufferAttribute(position, i);
+                vector.applyMatrix4(this.mesh.matrixWorld);
+                if (minPos > vector.y) minPos = vector.y
+            }
+            this.mesh.position.y += this.minHeight - minPos;
+            if (this.layFlatSideSelectorMesh) this.layFlatSideSelectorMesh.position.y = this.mesh.position.y;
         }
-        this.mesh.position.y += this.minHeight - minPos;
-
     }
 
     setupLine() {
@@ -532,7 +568,7 @@ export default class app3d {
         this.lineMaterial.resolution.set(window.innerWidth - this.sidePanelWidth, window.innerHeight);
         this.linePoints.push(0, 0, 0);
         this.linePoints.push(5, 5, 5);
-        var lineGeometry = new THREE.LineGeometry();
+        const lineGeometry = new THREE.LineGeometry();
         lineGeometry.setPositions(this.linePoints);
         this.line = new THREE.Line2(lineGeometry, this.lineMaterial);
         this.line.visible = false;
@@ -598,6 +634,40 @@ export default class app3d {
 
         this.supportMaterialSelected = this.supportMaterial.clone();
         this.supportMaterialSelected.color = new THREE.Color(0.1, 0.6, 0.1);
+
+        this.meshLayFlatMaterial = new THREE.MeshPhongMaterial({
+            color: new THREE.Color(0.7, 1, 0, 7),
+            shininess: 100,
+            transparent: true,
+            opacity: 0.4,
+            depthTest: false
+        });
+
+        this.meshLayFlatMaterial.onBeforeCompile = (shader) => {
+            shader.uniforms.highlightNormal = new THREE.Uniform(this.downVector);
+
+            shader.vertexShader = 'uniform vec3 highlightNormal;\nvarying float vDotToNormal;\n' + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                vec3 transformed = vec3(position);
+                                
+                vDotToNormal = dot(highlightNormal, normal);
+            `);
+
+            shader.fragmentShader = 'varying float vDotToNormal;\n' + shader.fragmentShader;
+            shader.fragmentShader = shader.fragmentShader.replace(
+                'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+                `
+                gl_FragColor = vec4(outgoingLight.r, outgoingLight.g, outgoingLight.b, diffuseColor.a);
+
+                // Highlight if facing the highlightNormal
+                gl_FragColor.r = vDotToNormal > 0.99999 ? 1.0 : gl_FragColor.r;
+                gl_FragColor.g = vDotToNormal > 0.99999 ? 1.0 : gl_FragColor.g;
+                gl_FragColor.b = vDotToNormal > 0.99999 ? 1.0 : gl_FragColor.b;
+            `);
+            this.meshLayFlatMaterialShader = shader;
+        };
     }
 
     setupBuildplate() {
@@ -645,7 +715,7 @@ export default class app3d {
         material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.1, transparent: true });
         this.minHeightMesh = new THREE.Mesh(geometry, material);
         this.scene.add(this.minHeightMesh);
-        this.minHeightMesh.renderOrder = 2;
+        this.minHeightMesh.renderOrder = 20;
         this.minHeightMesh.scale.set(1, 1 * this.minHeight, 1);
     }
 
@@ -800,11 +870,119 @@ export default class app3d {
         this.render();
     }
 
+    setTipEndSpheres(enabled) {
+        if (this.supports.length === 0) return;
+
+        const selectedSupports = this.supports.filter(s => s.selected);
+        if (selectedSupports.length > 0) {
+            selectedSupports.forEach(s => s.setTipEndSphere(enabled));
+        } else {
+            const supportsWithSelectedTip = this.supports.filter(s => s.tips.some(t => t.selected));
+            if (supportsWithSelectedTip.length > 0) {
+                supportsWithSelectedTip.forEach(s => s.setTipEndSphere(enabled));
+            } else {
+                this.supports[this.supports.length - 1].setTipEndSphere(enabled);
+            }
+        }
+        this.render();
+    }
+
     setMinHeight(value) {
         this.minHeight = value;
         this.moveMeshToMinHeight();
         this.minHeightMesh.scale.set(1, 1 * this.minHeight, 1);
         this.render();
+    }
+
+    toggleLayFlatMesh() {
+        if (this.layFlatSideSelectorMesh) {
+            this.removeLayFlatMesh();
+        } else {
+            // Create the bounding, simplified convex hull
+            let tempGeometry = new THREE.Geometry().fromBufferGeometry(this.mesh.geometry);
+            let meshGeometry = new THREE.ConvexBufferGeometry(tempGeometry.vertices);
+
+            let modifier = new THREE.SimplifyModifier();
+            // let count = meshGeometry.attributes.position.count * 0.1;
+            let count = Math.floor(meshGeometry.attributes.position.count * 0.1);
+            meshGeometry = modifier.modify(meshGeometry, count);
+
+            meshGeometry.computeFaceNormals();
+            tempGeometry = new THREE.Geometry().fromBufferGeometry(meshGeometry);
+            tempGeometry.computeFaceNormals();
+
+            // const geom = new THREE.Geometry();
+            // let myFaces = [];
+            // tempGeometry.faces.forEach(face => {
+            //     const t = new THREE.Triangle(
+            //         tempGeometry.vertices[face.a],
+            //         tempGeometry.vertices[face.b],
+            //         tempGeometry.vertices[face.c],
+            //     )
+            //     let area = t.getArea();
+            //     myFaces.push([tempGeometry.vertices[face.a], tempGeometry.vertices[face.b], tempGeometry.vertices[face.c], area, face.normal]);
+            // });
+
+            // const biggestMyFaces = [...myFaces.sort((f1, f2) => { return (f2[3] - f1[3]) })];
+            // biggestMyFaces.length = Math.min(biggestMyFaces.length, 20);
+
+            // console.log(myFaces.length)
+            // let vertexCounter = 0;
+
+            // biggestMyFaces.forEach(f => {
+            //     myFaces.filter(mf => f[4].angleTo(mf[4]) <= 0.02).forEach(sf => {
+            //         if (!sf.used) {
+            //             geom.vertices.push(sf[0], sf[1], sf[2]);
+            //             geom.faces.push(new THREE.Face3(vertexCounter, vertexCounter + 1, vertexCounter + 2));
+            //             vertexCounter += 3;
+            //             sf.used = true;
+            //         }
+            //     })
+            // })
+            // geom.computeFaceNormals();
+
+            this.layFlatSideSelectorMesh = new THREE.Mesh(tempGeometry, this.meshLayFlatMaterial);
+            this.layFlatSideSelectorMesh.renderOrder = 2;
+            this.layFlatSideSelectorMesh.position.y = this.mesh.position.y - 0.001;
+            this.scene.add(this.layFlatSideSelectorMesh);
+
+            // this.normalHelper = new VertexNormalsHelper(this.layFlatSideSelectorMesh, 2, 0x00ff00, 1);
+            // this.scene.add(this.normalHelper);
+
+            this.render();
+        }
+    }
+
+    removeLayFlatMesh() {
+        this.disposeMesh(this.layFlatSideSelectorMesh);
+        this.layFlatSideSelectorMesh = null;
+    }
+
+    setLayFlatMode(enabled) {
+        if (enabled) {
+            const geometry = new THREE.CircleGeometry(5, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+            this.layFlatCircle = new THREE.Mesh(geometry, material);
+            this.layFlatCircle.renderOrder = 2;
+            this.layFlatCircle.visible = false;
+            this.scene.add(this.layFlatCircle);
+        } else {
+            this.disposeMesh(this.layFlatCircle, false);
+            this.layFlatCircle = null;
+            this.removeLayFlatMesh();
+        }
+    }
+
+    disposeMesh(mesh, cleanRenderList = true) {
+        if (mesh) {
+            mesh.parent.remove(mesh);
+            mesh.geometry.dispose();
+            mesh = null;
+            if (cleanRenderList) {
+                this.renderer.renderLists.dispose();
+                this.render();
+            }
+        }
     }
 }
 window.data.set3dApp(new app3d());

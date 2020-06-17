@@ -22,7 +22,7 @@ export default function PanelSupports(props) {
     supportContainer.scrollTop = supportContainer.scrollHeight;
     return () => {
       window.data.removeCallbacks('panelSupport');
-      hotkeys.unbind('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n');
+      hotkeys.unbind('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n,t,shift+t');
     };
   }, []);
   React.useEffect(() => {
@@ -36,7 +36,7 @@ export default function PanelSupports(props) {
   }, [presetContext]);
 
   function setupHotkeys() {
-    hotkeys('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n', function (event, handler) {
+    hotkeys('1,2,3,4,5,6,7,8,9,0,ctrl+a,ctrl+d,delete,l,i,n,t,shift+t', function (event, handler) {
       switch (handler.key) {
         case 'ctrl+a':
           {
@@ -71,6 +71,18 @@ export default function PanelSupports(props) {
         case 'n':
           {
             setSupportHeightToNormal();
+            break;
+          }
+
+        case 't':
+          {
+            setTipEndSpheres(true);
+            break;
+          }
+
+        case 'shift+t':
+          {
+            setTipEndSpheres(false);
             break;
           }
 
@@ -197,6 +209,11 @@ export default function PanelSupports(props) {
     console.log(type);
   }
 
+  function setTipEndSpheres(enabled) {
+    a3d.setTipEndSpheres(enabled);
+    setSupports(prev => [...prev]);
+  }
+
   return /*#__PURE__*/React.createElement(React.Fragment, null, presetContext.visible && /*#__PURE__*/React.createElement("div", {
     id: "presetContextMenu",
     style: {
@@ -280,11 +297,26 @@ export default function PanelSupports(props) {
     key: s.id,
     onClick: e => selectSupport(s, e),
     className: s.selected ? 'is-selected' : undefined
-  }, /*#__PURE__*/React.createElement("td", null, s.id), /*#__PURE__*/React.createElement("td", null, s.presetName, s.isMini && " (mini)"), /*#__PURE__*/React.createElement("td", {
+  }, /*#__PURE__*/React.createElement("td", null, s.id), /*#__PURE__*/React.createElement("td", null, s.presetName, s.isMini && " (mini)"), /*#__PURE__*/React.createElement("td", null, s.tips.map((t, idx) => /*#__PURE__*/React.createElement("span", {
+    key: idx,
+    className: !s.selected && t.selected ? "selected" : undefined
+  }, t.tipSphere ? '\u23FA' : '\u25B2'))), /*#__PURE__*/React.createElement("td", {
     className: "has-text-right"
   }, /*#__PURE__*/React.createElement("a", {
     href: "#"
-  }, "...")))))))), supports.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "...")))))))), /*#__PURE__*/React.createElement("div", {
+    className: "content noBottom buttons"
+  }, supports.length > 0 && /*#__PURE__*/React.createElement("a", {
+    className: "button is-small",
+    onClick: () => setTipEndSpheres(true)
+  }, "Set tip ends", /*#__PURE__*/React.createElement("span", {
+    className: "shortcut"
+  }, "T")), supports.length > 0 && /*#__PURE__*/React.createElement("a", {
+    className: "button is-small",
+    onClick: () => setTipEndSpheres(false)
+  }, "Remove tip ends", /*#__PURE__*/React.createElement("span", {
+    className: "shortcut"
+  }, "Shift+T"))), supports.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "content"
   }, /*#__PURE__*/React.createElement("h4", null, "Remove"), /*#__PURE__*/React.createElement("div", {
     className: "buttons"

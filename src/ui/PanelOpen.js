@@ -5,24 +5,31 @@ export default function PanelOpen(props) {
   const [fileModalOpen, setFileModalOpen] = React.useState(false);
   const [minHeight, setMinHeight] = React.useState(a3d.minHeight);
 
-  // React.useEffect(() => {
-  //   window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
-  //   return () => { window.data.removeCallbacks('panelOpen'); }
-  // }, []);
-
   function changeMinHeight(value) {
     a3d.setMinHeight(value);
     setMinHeight(value);
   }
 
-  // function setMinheightCallback(newMinHeight) {
-  //   setMinHeight(newMinHeight);
-  // }
-
   function changeMode(newMode) {
     if (newMode === mode) newMode = null;
     setMode(newMode);
-    window.dispatchEvent(new CustomEvent('u2sTransformControlModeSelect', { detail: { mode: newMode } }));
+    a3d.setTransformControlMode(newMode);
+    document.activeElement.blur();
+  }
+
+  function selectLayFlat() {
+    if (mode !== 'layFlat') {
+      changeMode(null);
+      setMode('layFlat');
+      a3d.setLayFlatMode(true);
+    } else {
+      a3d.removeLayFlatMesh();
+      changeMode(null);
+    }
+  }
+
+  function toggleLayFlatMesh() {
+    a3d.toggleLayFlatMesh();
     document.activeElement.blur();
   }
 
@@ -30,6 +37,8 @@ export default function PanelOpen(props) {
     setMode('fileOpen');
     if (props.hasMesh) {
       setFileModalOpen(true);
+    } else {
+      openMeshFile();
     }
   }
 
@@ -71,6 +80,21 @@ export default function PanelOpen(props) {
               <span>Scale</span>
               <span className='shortcut'>S</span>
             </button>
+          </div>
+          <div className="content">
+            <div className="buttons">
+              <button onClick={() => selectLayFlat()} className={mode === 'layFlat' ? "button is-orange" : "button"}>
+                <span>Select bottom facing side</span>
+              </button>
+              {mode === 'layFlat' &&
+                <>
+                  <p>Click on the face on the model or the wrap that should face the buildplate.</p>
+                  <button onClick={() => toggleLayFlatMesh()} className='button'>
+                    <span>Toggle wrap</span>
+                  </button>
+                </>
+              }
+            </div>
           </div>
         </div>
       }

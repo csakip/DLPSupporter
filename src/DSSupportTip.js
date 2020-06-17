@@ -8,6 +8,7 @@ export default class DSSupportTip {
         this.contactPosition = contactPosition.clone();
         this.baseY = baseY;
         this.selected = false;
+        this.tipSphere = false;
 
         this.tip = {};
         this.tipEnd = {};
@@ -114,6 +115,21 @@ export default class DSSupportTip {
         this.tip.mesh.geometry.scale(value, 1, value);
         this.tipEnd.mesh.geometry.scale(value, value, value);
         // this.supportHeightHandle.geometry.scale(value, value, value);
+    }
+
+    setTipEndSphere(sphereDiameter) {
+        let tipEndGeometry = null;
+        if (sphereDiameter === true) sphereDiameter = this.tip.diameter * 2;
+        if (sphereDiameter) {
+            tipEndGeometry = new THREE.SphereGeometry(sphereDiameter / 2, 8, 4);
+            this.tipSphere = true;
+        } else {
+            tipEndGeometry = new THREE.SphereGeometry(this.tip.diameter / 2, 8, 8);
+            this._flattenBottom(tipEndGeometry);
+            this.tipSphere = false;
+        }
+        tipEndGeometry.rotateX(Math.PI);
+        this.tipEnd.mesh.geometry = tipEndGeometry;
     }
 
     dispose() {

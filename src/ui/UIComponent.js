@@ -6,13 +6,17 @@ import PanelTest from './PanelTest.js';
 export default function UIComponent() {
   const a3d = window.data.my3dApp;
   const [activePanel, setActivePanel] = React.useState('open');
-  const [hasMesh, setHasMesh] = React.useState(true);
+  const [hasMesh, setHasMesh] = React.useState(!!a3d.mesh);
   const [helpText, setHelpText] = React.useState([]);
 
   React.useEffect(() => {
-    window.addEventListener('meshLoaded', (e) => handleMeshLoaded(e));
+    window.data.addCallback('meshLoaded', handleMeshLoaded, 'UIComponent')
     setHotkeys();
     activatePanel('support');
+
+    return (() => {
+      window.data.removeCallbacks('UIComponent');
+    });
   }, [])
 
   React.useEffect(() => { showHelpText() }, [activePanel]);
@@ -29,8 +33,8 @@ export default function UIComponent() {
     });
   }
 
-  function handleMeshLoaded(e) {
-    setHasMesh(e.detail.hasMesh);
+  function handleMeshLoaded(hasMesh) {
+    setHasMesh(hasMesh);
   }
 
   function handleHome() {
@@ -40,7 +44,7 @@ export default function UIComponent() {
 
   function activatePanel(panelName) {
     setActivePanel(panelName);
-    window.dispatchEvent(new CustomEvent('u2sActivePanel', { detail: { activePanel: panelName } }));
+    a3d.setActivePanel(panelName);
   }
 
   function showHelpText(switches) {

@@ -2,27 +2,33 @@ export default function PanelOpen(props) {
   const a3d = window.data.my3dApp;
   const [mode, setMode] = React.useState(null);
   const [fileModalOpen, setFileModalOpen] = React.useState(false);
-  const [minHeight, setMinHeight] = React.useState(a3d.minHeight); // React.useEffect(() => {
-  //   window.data.addCallback('setMinHeight', setMinheightCallback, 'panelOpen');
-  //   return () => { window.data.removeCallbacks('panelOpen'); }
-  // }, []);
+  const [minHeight, setMinHeight] = React.useState(a3d.minHeight);
 
   function changeMinHeight(value) {
     a3d.setMinHeight(value);
     setMinHeight(value);
-  } // function setMinheightCallback(newMinHeight) {
-  //   setMinHeight(newMinHeight);
-  // }
-
+  }
 
   function changeMode(newMode) {
     if (newMode === mode) newMode = null;
     setMode(newMode);
-    window.dispatchEvent(new CustomEvent('u2sTransformControlModeSelect', {
-      detail: {
-        mode: newMode
-      }
-    }));
+    a3d.setTransformControlMode(newMode);
+    document.activeElement.blur();
+  }
+
+  function selectLayFlat() {
+    if (mode !== 'layFlat') {
+      changeMode(null);
+      setMode('layFlat');
+      a3d.setLayFlatMode(true);
+    } else {
+      a3d.removeLayFlatMesh();
+      changeMode(null);
+    }
+  }
+
+  function toggleLayFlatMesh() {
+    a3d.toggleLayFlatMesh();
     document.activeElement.blur();
   }
 
@@ -31,6 +37,8 @@ export default function PanelOpen(props) {
 
     if (props.hasMesh) {
       setFileModalOpen(true);
+    } else {
+      openMeshFile();
     }
   }
 
@@ -74,7 +82,17 @@ export default function PanelOpen(props) {
     className: mode === 'scale' ? "button is-orange" : "button"
   }, /*#__PURE__*/React.createElement("span", null, "Scale"), /*#__PURE__*/React.createElement("span", {
     className: "shortcut"
-  }, "S")))), /*#__PURE__*/React.createElement("div", {
+  }, "S"))), /*#__PURE__*/React.createElement("div", {
+    className: "content"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "buttons"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => selectLayFlat(),
+    className: mode === 'layFlat' ? "button is-orange" : "button"
+  }, /*#__PURE__*/React.createElement("span", null, "Select bottom facing side")), mode === 'layFlat' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", null, "Click on the face on the model or the wrap that should face the buildplate."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => toggleLayFlatMesh(),
+    className: "button"
+  }, /*#__PURE__*/React.createElement("span", null, "Toggle wrap")))))), /*#__PURE__*/React.createElement("div", {
     className: fileModalOpen ? "modal is-active" : "modal"
   }, /*#__PURE__*/React.createElement("div", {
     className: "modal-background"

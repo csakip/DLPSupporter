@@ -180,6 +180,10 @@ button.is-orange .shortcut {
     width: 5%;
 }
 
+#supportContainer span.selected {
+    background-color: #375a7f;
+}
+
 .ss-content {
     overflow-x: hidden !important;
     background-color: #1b1b1c;
