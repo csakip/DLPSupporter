@@ -18,13 +18,14 @@ export default function PanelOpen(props) {
   }
 
   function selectLayFlat() {
+    document.activeElement.blur();
     if (mode !== 'layFlat') {
-      changeMode(null);
+      a3d.setTransformControlMode(null);
       setMode('layFlat');
       a3d.setLayFlatMode(true);
     } else {
-      a3d.removeLayFlatMesh();
-      changeMode(null);
+      a3d.setLayFlatMode(false);
+      setMode(null);
     }
   }
 

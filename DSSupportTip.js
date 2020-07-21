@@ -108,6 +108,10 @@ export default class DSSupportTip {
     this.selected = false;
   }
 
+  toggleSelected() {
+    this.selected ? this.deselect() : this.select();
+  }
+
   adjustDiameter(value) {
     this.tip.diameter *= value;
     this.tip.mesh.geometry.scale(value, 1, value);

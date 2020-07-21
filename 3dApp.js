@@ -25,7 +25,7 @@ export default class app3d {
         this.linePoints = [];
         this.colorRed = new THREE.Color(1.0, 0.2, 0.2);
         this.colorGreen = new THREE.Color(0.4, 1, 0.4);
-        this.downVector = new THREE.Vector3(0, -1, 0);
+        this.downVector = new THREE.Vector3(0, 0, 1);
 
         this.init();
         this.render();
@@ -197,13 +197,18 @@ export default class app3d {
                 if (this.mesh) {
                     // this.normalHelper.update();
                     this.moveMeshToMinHeight();
+                    if (this.layFlatSideSelectorMesh) {
+                        this.layFlatSideSelectorMesh.rotation.copy(this.mesh.rotation);
+                        this.layFlatSideSelectorMesh.position.copy(this.mesh.position);
+                        this.layFlatSideSelectorMesh.scale.copy(this.mesh.scale);
+                    }
                     if (this.transformControl.mode === 'translate') {
                         const offset = this.positionForTransform.sub(this.mesh.position).negate();
-                        if (offset.length() > 0 && offset.y === 0) {
+                        if (offset.length() > 0) {
                             this.supports.forEach(s => s.move(offset));
                         }
                         this.positionForTransform.copy(this.mesh.position);
-                        this.render()
+                        this.render();
                     }
                 }
             });
@@ -225,8 +230,10 @@ export default class app3d {
     }
 
     onMouseDown(evt) {
-        if (this.activePanel == 'open' && this.transformControl) {
-            this.positionForTransform = this.mesh.position.clone();
+        if (this.activePanel == 'open') {
+            if (this.transformControl) {
+                this.positionForTransform = this.mesh.position.clone();
+            }
         } else if (this.activePanel == 'support' && evt.buttons == 1 && this.mesh) {
 
             this.mouseMovePosition.fromArray(this.getMousePosition(this.container, evt.clientX, evt.clientY));
@@ -265,7 +272,7 @@ export default class app3d {
                             head: intersects[0].object.userData.head,
                             tip: true
                         }
-                    } else if (intersects[0].object.userData.supportType !== 'sh') {
+                    } else if (intersects[0].object.userData.supportType !== 'sh') {    // Shaft or base
                         // Reset plane rotation to be ground parallel
                         this.render();
                         var intersects = this.getIntersectPlane(this.mouseMovePosition);
@@ -277,13 +284,19 @@ export default class app3d {
                                 support: s
                             };
                         }
-                    } else {
-                        // Supportheight drag
-                        // Rotate plane to face camera
+                    } else { // Height handle spehere
+                        // Rotate plane to face camera and vertical
                         const lookAtPoint = new THREE.Vector3(this.cameraControls.camera.position.x, intersects[0].point.y, this.cameraControls.camera.position.z);
                         this.groundPlane.lookAt(lookAtPoint);
                         this.render();
-                        const head = intersects[0].object.userData.head;
+                        let head = intersects[0].object.userData.head;
+                        // Use the selected tip if multiple height handles are under the cursor
+                        if (!head.selected) {
+                            const selectedTipIntersect = intersects.find(i => i.object.userData && i.object.userData.supportType === 'sh' && i.object.userData.support && !i.object.userData.support.selected && i.object.userData.head.selected);
+                            if (selectedTipIntersect) {
+                                head = selectedTipIntersect.object.userData.head;
+                            }
+                        }
                         var intersects = this.getIntersectPlane(this.mouseMovePosition);
                         if (intersects) {
                             if (!s.selected) {
@@ -307,18 +320,22 @@ export default class app3d {
             this.mouseMovePosition.fromArray(this.getMousePosition(this.container, evt.clientX, evt.clientY));
 
             if (this.layFlatCircle) {
-                // if (this.layFlatSideSelectorMesh) this.layFlatSideSelectorMesh.geometry.computeFaceNormals();
+                // The bottom facing part selection.
                 if (this.layFlatSideSelectorMesh) {
+                    // The wrapper mesh
                     var intersects = this.getIntersects(this.mouseMovePosition, [this.layFlatSideSelectorMesh]);
                     if (intersects.length > 0) {
                         this.worldNormal.copy(intersects[0].object.localToWorld(intersects[0].face.normal.clone()));
                         this.drawNormalLineAndHeightBand(intersects[0].point, this.worldNormal, false);
                         this.meshLayFlatMaterialShader.uniforms.highlightNormal = new THREE.Uniform(intersects[0].face.normal);
+                        this.layFlatWorldVector = this.worldNormal.clone();
                     } else {
                         this.line.visible = false;
                         this.meshLayFlatMaterialShader.uniforms.highlightNormal = new THREE.Uniform(this.downVector);
+                        this.layFlatWorldVector = null;
                     }
                 } else {
+                    // The mesh
                     var intersects = this.getIntersects(this.mouseMovePosition, [this.mesh]);
                     if (intersects.length > 0) {
                         this.layFlatCircle.position.copy(intersects[0].point);
@@ -329,10 +346,12 @@ export default class app3d {
                         this.layFlatCircle.translateZ(0.01);
                         this.layFlatCircle.visible = true;
                         this.drawNormalLineAndHeightBand(intersects[0].point, this.worldNormal, true);
+                        this.layFlatWorldVector = this.worldNormal.clone();
                     } else {
                         this.layFlatCircle.visible = false;
                         this.line.visible = false;
                         this.materialShader.uniforms.cursorHeight.value = -1000;
+                        this.layFlatWorldVector = null;
                     }
                 }
                 this.render();
@@ -362,6 +381,7 @@ export default class app3d {
                     var intersects = this.getIntersectPlane(this.mouseMovePosition);
                     if (intersects) {
                         if (this.supportDragData.xz) {
+                            // Moving a support x z
                             const diffX = intersects.x - this.supportDragData.x;
                             const diffZ = intersects.z - this.supportDragData.z;
                             if (diffX != 0 || diffZ != 0) {
@@ -377,6 +397,7 @@ export default class app3d {
                                 this.render();
                             }
                         } else {
+                            // Moving a height handle
                             const diffY = intersects.y - this.supportDragData.y;
                             if (diffY != 0) {
                                 this.supportDragData.head.supportHeightHandle.visible = true;;
@@ -414,7 +435,18 @@ export default class app3d {
         this.orbitControls.enabled = true;
         this.newSupport = null;
 
-        if (this.supportDragData && !this.supportDragData.moved) {
+        if (this.layFlatCircle && this.layFlatWorldVector) {
+            this.tls(this.layFlatWorldVector.x, this.layFlatWorldVector.y, this.layFlatWorldVector.z)
+            this.mesh.lookAt(this.layFlatWorldVector);
+            this.mesh.rotateX(-Math.PI / 2);
+            if (this.layFlatSideSelectorMesh) {
+                this.layFlatSideSelectorMesh.lookAt(this.layFlatWorldVector);
+                this.layFlatSideSelectorMesh.rotateX(-Math.PI / 2);
+            }
+            this.layFlatWorldVector = null;
+            this.moveMeshToMinHeight();
+            this.render();
+        } else if (this.supportDragData && !this.supportDragData.moved) {
             if (this.supportDragData.support.selected) {
                 if (this.supportDragData.tip) {
                     this.supports.forEach(s => s.deselect());
@@ -428,11 +460,17 @@ export default class app3d {
                     }
                 }
             } else {
-                this.supports.filter(s => !s.selected).forEach(s => s.deselectTips());
-                if (!evt.ctrlKey) {
-                    this.supports.filter(s => s.selected).forEach(s => s.deselect());
+                const selectedSupports = this.supports.filter(s => s.selected);
+                if (selectedSupports.length === 0 && this.supportDragData.tip && evt.ctrlKey) {
+                    this.supportDragData.head.toggleSelected();
+                } else {
+                    this.supports.filter(s => !s.selected).forEach(s => s.deselectTips());
+
+                    if (!evt.ctrlKey) {
+                        this.supports.filter(s => s.selected).forEach(s => s.deselect());
+                    }
+                    this.supportDragData.support.select();
                 }
-                this.supportDragData.support.select();
             }
             this.render();
             window.data.go('selectedSupport');
@@ -854,7 +892,7 @@ export default class app3d {
     adjustSelectedSupportDiameter(value, tipsOnly, tipsAlso) {
         const selectedSupports = this.supports.filter(s => s.selected);
         if (selectedSupports.length == 0 && this.supports.length > 0) {
-            const tipSet = this.supports.some(s => {
+            const tipSet = this.supports.filter(s => {
                 const tip = s.tips.find(t => t.selected);
                 if (tip) {
                     tip.adjustDiameter(value);
@@ -903,7 +941,6 @@ export default class app3d {
             let meshGeometry = new THREE.ConvexBufferGeometry(tempGeometry.vertices);
 
             let modifier = new THREE.SimplifyModifier();
-            // let count = meshGeometry.attributes.position.count * 0.1;
             let count = Math.floor(meshGeometry.attributes.position.count * 0.1);
             meshGeometry = modifier.modify(meshGeometry, count);
 
@@ -911,43 +948,13 @@ export default class app3d {
             tempGeometry = new THREE.Geometry().fromBufferGeometry(meshGeometry);
             tempGeometry.computeFaceNormals();
 
-            // const geom = new THREE.Geometry();
-            // let myFaces = [];
-            // tempGeometry.faces.forEach(face => {
-            //     const t = new THREE.Triangle(
-            //         tempGeometry.vertices[face.a],
-            //         tempGeometry.vertices[face.b],
-            //         tempGeometry.vertices[face.c],
-            //     )
-            //     let area = t.getArea();
-            //     myFaces.push([tempGeometry.vertices[face.a], tempGeometry.vertices[face.b], tempGeometry.vertices[face.c], area, face.normal]);
-            // });
-
-            // const biggestMyFaces = [...myFaces.sort((f1, f2) => { return (f2[3] - f1[3]) })];
-            // biggestMyFaces.length = Math.min(biggestMyFaces.length, 20);
-
-            // console.log(myFaces.length)
-            // let vertexCounter = 0;
-
-            // biggestMyFaces.forEach(f => {
-            //     myFaces.filter(mf => f[4].angleTo(mf[4]) <= 0.02).forEach(sf => {
-            //         if (!sf.used) {
-            //             geom.vertices.push(sf[0], sf[1], sf[2]);
-            //             geom.faces.push(new THREE.Face3(vertexCounter, vertexCounter + 1, vertexCounter + 2));
-            //             vertexCounter += 3;
-            //             sf.used = true;
-            //         }
-            //     })
-            // })
-            // geom.computeFaceNormals();
-
             this.layFlatSideSelectorMesh = new THREE.Mesh(tempGeometry, this.meshLayFlatMaterial);
             this.layFlatSideSelectorMesh.renderOrder = 2;
             this.layFlatSideSelectorMesh.position.y = this.mesh.position.y - 0.001;
+            this.layFlatSideSelectorMesh.rotation.copy(this.mesh.rotation);
+            this.layFlatSideSelectorMesh.position.copy(this.mesh.position);
+            this.layFlatSideSelectorMesh.scale.copy(this.mesh.scale);
             this.scene.add(this.layFlatSideSelectorMesh);
-
-            // this.normalHelper = new VertexNormalsHelper(this.layFlatSideSelectorMesh, 2, 0x00ff00, 1);
-            // this.scene.add(this.normalHelper);
 
             this.render();
         }
