@@ -26,6 +26,7 @@ export default class app3d {
         this.colorRed = new THREE.Color(1.0, 0.2, 0.2);
         this.colorGreen = new THREE.Color(0.4, 1, 0.4);
         this.downVector = new THREE.Vector3(0, 0, 1);
+        this.lastMove = Date.now();
 
         this.init();
         this.render();
@@ -316,6 +317,11 @@ export default class app3d {
     }
 
     onMouseMove(evt) {
+        if (Date.now() - this.lastMove < 31) { // 32 frames a second
+            return;
+        } else {
+            this.lastMove = Date.now();
+        }
         if (this.mesh) {
             this.mouseMovePosition.fromArray(this.getMousePosition(this.container, evt.clientX, evt.clientY));
 
