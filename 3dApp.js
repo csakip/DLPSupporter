@@ -65,7 +65,7 @@ export default class app3d {
         this.setupHotkeys();
 
         // this.loadStl('./single.stl', this.meshMaterial);
-        this.loadStl('./trimmer.stl', this.meshMaterial);
+        // this.loadStl('./trimmer.stl', this.meshMaterial);
         this.orbitControls.update();
     }
 

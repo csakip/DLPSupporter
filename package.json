@@ -4,7 +4,7 @@
   "description": "",
   "main": "3dapp.js",
   "scripts": {
-    "httpserver": "python -m http.server",
+    "httpserver": "php -S localhost:8000",
     "babel": "npx babel --watch src --out-dir . --presets @babel/preset-react --plugins @babel/plugin-proposal-class-properties --verbose"
   },
   "keywords": [],
