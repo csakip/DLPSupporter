@@ -2,6 +2,7 @@ import PanelOpen from './PanelOpen.js';
 import PanelSupports from './PanelSupports.js';
 import PanelInfo from './PanelInfo.js';
 import PanelTest from './PanelTest.js';
+import { helpTexts } from './HelpTexts.js';
 export default function UIComponent() {
   const a3d = window.data.my3dApp;
   const [activePanel, setActivePanel] = React.useState('open');
@@ -69,21 +70,6 @@ export default function UIComponent() {
     setHelpText(ht);
   }
 
-  const helpTexts = [{
-    "panelName": "open",
-    "text": "This is a common help for open",
-    "switches": [{
-      "switch": "file",
-      "text": "Switch help"
-    }]
-  }, {
-    "panelName": "support",
-    "text": ["This is a common help for support", "[Ctrl + A] to select all supports", "[I] to invert selection"],
-    "switches": [{
-      "switch": "supportSelected",
-      "text": ["[del] to delete selected supports"]
-    }]
-  }];
   let i = 0;
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "floatingPanel"

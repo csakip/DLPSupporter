@@ -26,6 +26,7 @@ export default class app3d {
         this.colorRed = new THREE.Color(1.0, 0.2, 0.2);
         this.colorGreen = new THREE.Color(0.4, 1, 0.4);
         this.downVector = new THREE.Vector3(0, 0, 1);
+        this.cameraHideVector = new THREE.Vector3(0, -1, 0);
         this.lastMove = Date.now();
 
         this.init();
@@ -63,8 +64,8 @@ export default class app3d {
         this.setupEvents();
         this.setupHotkeys();
 
-        this.loadStl('./single.stl', this.meshMaterial);
-        // this.loadStl('./trimmer.stl', this.meshMaterial);
+        // this.loadStl('./single.stl', this.meshMaterial);
+        this.loadStl('./trimmer.stl', this.meshMaterial);
         this.orbitControls.update();
     }
 
@@ -174,7 +175,7 @@ export default class app3d {
 
         // Hide supports on low camera position
         this.orbitControls.addEventListener('change', () => {
-            var angle = new THREE.Vector3(this.cameraControls.camera.matrix.elements[8], this.cameraControls.camera.matrix.elements[9], this.cameraControls.camera.matrix.elements[10]).angleTo(this.downVector)
+            var angle = new THREE.Vector3(this.cameraControls.camera.matrix.elements[8], this.cameraControls.camera.matrix.elements[9], this.cameraControls.camera.matrix.elements[10]).angleTo(this.cameraHideVector)
             if (angle <= Math.PI / 4 && this.raycastGroupHiding.visible) {
                 this.raycastGroupHiding.visible = false;
             }
@@ -442,7 +443,7 @@ export default class app3d {
         this.newSupport = null;
 
         if (this.layFlatCircle && this.layFlatWorldVector) {
-            this.tls(this.layFlatWorldVector.x, this.layFlatWorldVector.y, this.layFlatWorldVector.z)
+            //this.tls(this.layFlatWorldVector.x, this.layFlatWorldVector.y, this.layFlatWorldVector.z)
             this.mesh.lookAt(this.layFlatWorldVector);
             this.mesh.rotateX(-Math.PI / 2);
             if (this.layFlatSideSelectorMesh) {

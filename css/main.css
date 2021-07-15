@@ -249,10 +249,15 @@ a.tag:hover {
 }
 
 .sideBottom {
-    position:absolute;
+    position: absolute;
     bottom: 5px;
     left: 5px;
 }
 .sideBottom p {
     font-size: 80%;
+}
+
+.tipCell {
+    overflow: hidden;
+    max-width: 170px;
 }

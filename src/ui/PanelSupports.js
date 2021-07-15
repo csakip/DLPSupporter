@@ -257,7 +257,9 @@ export default function PanelSupports(props) {
                   <td>{s.id}</td>
                   <td>{s.presetName}{s.isMini && " (mini)"}</td>
                   <td>
-                    {s.tips.map((t, idx) => <span key={idx} className={!s.selected && t.selected ? "selected" : undefined}>{t.tipSphere ? '\u23FA' : '\u25B2'}</span>)}
+                    <div className="tipCell">
+                      {s.tips.map((t, idx) => <span key={idx} className={!s.selected && t.selected ? "selected" : undefined}>{t.tipSphere ? '\u23FA' : '\u25B2'}</span>)}
+                    </div>
                   </td>
                   <td className='has-text-right'><a href='#'>...</a></td>
                 </tr>

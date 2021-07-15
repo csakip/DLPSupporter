@@ -297,10 +297,12 @@ export default function PanelSupports(props) {
     key: s.id,
     onClick: e => selectSupport(s, e),
     className: s.selected ? 'is-selected' : undefined
-  }, /*#__PURE__*/React.createElement("td", null, s.id), /*#__PURE__*/React.createElement("td", null, s.presetName, s.isMini && " (mini)"), /*#__PURE__*/React.createElement("td", null, s.tips.map((t, idx) => /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("td", null, s.id), /*#__PURE__*/React.createElement("td", null, s.presetName, s.isMini && " (mini)"), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("div", {
+    className: "tipCell"
+  }, s.tips.map((t, idx) => /*#__PURE__*/React.createElement("span", {
     key: idx,
     className: !s.selected && t.selected ? "selected" : undefined
-  }, t.tipSphere ? '\u23FA' : '\u25B2'))), /*#__PURE__*/React.createElement("td", {
+  }, t.tipSphere ? '\u23FA' : '\u25B2')))), /*#__PURE__*/React.createElement("td", {
     className: "has-text-right"
   }, /*#__PURE__*/React.createElement("a", {
     href: "#"
